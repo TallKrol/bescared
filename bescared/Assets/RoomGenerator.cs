@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class RoomGenerator : MonoBehaviour
 {
     public GameObject[] roomPrefabs; // Массив префабов комнат
+    public float[] prefabWeights; // Массив весов для каждого префаба
     public Transform player; // Ссылка на игрока
     public float generationDistance = 20f; // Расстояние, на котором генерируются новые комнаты
     public float deactivationDistance = 30f; // Расстояние, на котором комнаты будут деактивироваться
@@ -37,7 +38,7 @@ public class RoomGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2 roomPosition = new Vector2(x * 10, y * 20); // Изменить на нужное расстояние
+                Vector2 roomPosition = new Vector2(x * 10, y * 15); // Изменить на нужное расстояние
                 GenerateRoom(roomPosition);
             }
         }
@@ -51,7 +52,7 @@ public class RoomGenerator : MonoBehaviour
         {
             for (int y = -1; y <= 1; y++)
             {
-                Vector2 roomPosition = playerPosition + new Vector2(x, y * 10);
+                Vector2 roomPosition = playerPosition + new Vector2(0, y * 10);
 
                 if (!generatedRooms.ContainsKey(roomPosition))
                 {
@@ -63,9 +64,26 @@ public class RoomGenerator : MonoBehaviour
 
     private void GenerateRoom(Vector2 position)
     {
-        GameObject roomPrefab = roomPrefabs[Random.Range(0, roomPrefabs.Length)];
-        GameObject room = Instantiate(roomPrefab, new Vector3(position.x, 0, position.y), Quaternion.identity);
-        generatedRooms[position] = room;
+        float totalWeight = 0f;
+        foreach (float weight in prefabWeights)
+        {
+            totalWeight += weight;
+        }
+
+        float randomWeight = Random.Range(0f, totalWeight);
+        float accumulatedWeight = 0f;
+
+        for (int i = 0; i < roomPrefabs.Length; i++)
+        {
+            accumulatedWeight += prefabWeights[i];
+            if (randomWeight <= accumulatedWeight)
+            {
+                GameObject roomPrefab = roomPrefabs[i];
+                GameObject room = Instantiate(roomPrefab, new Vector3(position.x, 0, position.y), Quaternion.identity);
+                generatedRooms[position] = room;
+                return;
+            }
+        }
     }
 
     private void DeactivateRoomsFarFromPlayer()

@@ -316,7 +316,7 @@ Transform:
   m_GameObject: {fileID: 915752008}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -429,8 +429,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomPrefabs:
   - {fileID: 7441032144361126273, guid: 453a132be05cc08449bdfa17fe1b3357, type: 3}
+  prefabWeights:
+  - 1
   player: {fileID: 915752012}
-  generationDistance: 20
+  generationDistance: 10
   deactivationDistance: 50
   width: 1
   height: 1
