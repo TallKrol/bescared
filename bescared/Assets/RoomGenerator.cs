@@ -37,7 +37,7 @@ public class RoomGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Vector2 roomPosition = new Vector2(x * 10, y * 10); // Изменить на нужное расстояние
+                Vector2 roomPosition = new Vector2(x * 10, y * 20); // Изменить на нужное расстояние
                 GenerateRoom(roomPosition);
             }
         }
@@ -47,11 +47,11 @@ public class RoomGenerator : MonoBehaviour
     {
         Vector2 playerPosition = new Vector2(Mathf.Floor(player.position.x / 10) * 10, Mathf.Floor(player.position.z / 10) * 10);
 
-        for (int x = -1; x <= 1; x++)
+        for (int x = -1; x <= -1; x++)
         {
             for (int y = -1; y <= 1; y++)
             {
-                Vector2 roomPosition = playerPosition + new Vector2(x * 10, y * 10);
+                Vector2 roomPosition = playerPosition + new Vector2(x, y * 10);
 
                 if (!generatedRooms.ContainsKey(roomPosition))
                 {
