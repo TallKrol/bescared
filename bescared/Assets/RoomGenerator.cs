@@ -10,8 +10,6 @@ public class RoomGenerator : MonoBehaviour
     public Transform player; // Ссылка на игрока
     public float generationDistance = 20f; // Расстояние, на котором генерируются новые комнаты
     public float deactivationDistance = 30f; // Расстояние, на котором комнаты будут деактивироваться
-    public int width = 5; // Ширина карты
-    public int height = 5; // Высота карты
 
     private Vector3 lastPlayerPosition;
     private Dictionary<Vector2, GameObject> generatedRooms = new Dictionary<Vector2, GameObject>();
@@ -36,35 +34,25 @@ public class RoomGenerator : MonoBehaviour
 
     private void GenerateInitialRooms()
     {
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                Vector2 roomPosition = new Vector2(x * 10, y * 30); // Изменить на нужное расстояние
-                GenerateRoom(roomPosition);
-            }
-        }
+        // Генерация первой комнаты в начальной позиции
+        GenerateRoom(Vector2.zero);
     }
 
     private void GenerateRoomsAroundPlayer()
     {
-        Vector2 playerPosition = new Vector2(Mathf.Floor(player.position.x / 10) * 10, Mathf.Floor(player.position.z / 10) * 30); // расстояние между центрами комнат
+        Vector2 playerPosition = GetGridPosition(player.position);
 
-        for (int x = -1; x <= -1; x++)
+        // Генерируем комнату впереди игрока
+        Vector2 roomPosition = playerPosition + new Vector2(0, 1); // Вперед по оси Z
+
+        // Проверяем, свободна ли позиция для новой комнаты
+        if (IsPositionFree(roomPosition))
         {
-            for (int y = -1; y <= 1; y++)
-            {
-                Vector2 roomPosition = playerPosition + new Vector2(0, y * 30);
-
-                if (!generatedRooms.ContainsKey(roomPosition))
-                {
-                    GenerateRoom(roomPosition);
-                }
-            }
+            GenerateRoom(roomPosition);
         }
     }
 
-    private void GenerateRoom(Vector2 position)
+    private void GenerateRoom(Vector3 position)
     {
         float totalWeight = 0f;
         foreach (float weight in prefabWeights)
@@ -87,9 +75,19 @@ public class RoomGenerator : MonoBehaviour
                 // Генерация объектов внутри комнаты
                 GenerateInteriorObjects(room);
 
-                return;
+                // Получаем длину комнаты
+                float roomLength = room.GetComponent<MeshCollider>().bounds.size.z; // Получаем длину комнаты по оси Z
+
+                // Увеличиваем координату Z на длину комнаты для следующей комнаты
+                position.z += roomLength; // Обновляем позицию для следующей комнаты
+                break;
             }
         }
+    }
+
+    private bool IsPositionFree(Vector2 position)
+    {
+        return !generatedRooms.ContainsKey(position);
     }
 
     private void GenerateInteriorObjects(GameObject room)
@@ -105,8 +103,8 @@ public class RoomGenerator : MonoBehaviour
             return;
         }
 
-        float roomWidth = roomCollider.bounds.size.x;
-        float roomDepth = roomCollider.bounds.size.z;
+        float roomWidth = roomCollider.bounds.size.x; // Ширина комнаты по оси X
+        float roomDepth = roomCollider.bounds.size.z; // Глубина комнаты по оси Z
 
         for (int i = 0; i < numberOfObjects; i++)
         {
@@ -140,9 +138,10 @@ public class RoomGenerator : MonoBehaviour
                     }
 
                     // Определите случайную позицию внутри комнаты
-                    Vector3 randomPosition = room.transform.position + new Vector3(Random.Range(-roomWidth / 2f, roomWidth / 2f), interiorHeight / 2 + 3, Random.Range(-roomDepth / 2f, roomDepth / 2f));
+                    Vector3 randomPosition = room.transform.position + new Vector3(Random.Range(-roomWidth / 2f, roomWidth / 2f), interiorHeight / 2f, Random.Range(-roomDepth / 2f, roomDepth / 2f));
 
                     Instantiate(interiorPrefab, randomPosition, Quaternion.identity, room.transform); // Установить родительский объект
+                    Debug.Log($"Spawned {interiorPrefab.name} at {randomPosition} inside room.");
                     break;
                 }
             }
@@ -166,5 +165,10 @@ public class RoomGenerator : MonoBehaviour
                 room.Value.SetActive(true);
             }
         }
+    }
+
+    private Vector2 GetGridPosition(Vector3 position)
+    {
+        return new Vector2(Mathf.Floor(position.x / 10) * 10, Mathf.Floor(position.z / 10) * 30);
     }
 }
