@@ -13,6 +13,7 @@ public class RoomGenerator : MonoBehaviour
 
     private Vector3 lastPlayerPosition;
     private Dictionary<Vector2, GameObject> generatedRooms = new Dictionary<Vector2, GameObject>();
+    private float lastRoomLength = 0f; // Длина последней сгенерированной комнаты
 
     private void Start()
     {
@@ -52,7 +53,7 @@ public class RoomGenerator : MonoBehaviour
         }
     }
 
-    private void GenerateRoom(Vector3 position)
+    private void GenerateRoom(Vector2 position)
     {
         float totalWeight = 0f;
         foreach (float weight in prefabWeights)
@@ -75,11 +76,14 @@ public class RoomGenerator : MonoBehaviour
                 // Генерация объектов внутри комнаты
                 GenerateInteriorObjects(room);
 
-                // Получаем длину комнаты
-                float roomLength = room.GetComponent<MeshCollider>().bounds.size.z; // Получаем длину комнаты по оси Z
+                // Получаем длину текущей комнаты
+                float roomLengthNew = room.GetComponent<MeshCollider>().bounds.size.z; // Получаем длину новой комнаты по оси Z
 
-                // Увеличиваем координату Z на длину комнаты для следующей комнаты
-                position.z += roomLength; // Обновляем позицию для следующей комнаты
+                // Увеличиваем координату Z на полусумму длин предыдущей и новой комнаты
+                position.y += (lastRoomLength + roomLengthNew) / 2; // Обновляем позицию для следующей комнаты
+
+                // Сохраняем длину текущей комнаты для следующей итерации
+                lastRoomLength = roomLengthNew;
                 break;
             }
         }
@@ -169,6 +173,6 @@ public class RoomGenerator : MonoBehaviour
 
     private Vector2 GetGridPosition(Vector3 position)
     {
-        return new Vector2(Mathf.Floor(position.x / 10) * 10, Mathf.Floor(position.z / 10) * 30);
+        return new Vector2(Mathf.Floor(position.x / 10) * 10, Mathf.Floor(position.z / 10) * 10); 
     }
 }
