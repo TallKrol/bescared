@@ -1,32 +1,38 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-[RequireComponent(typeof(PlayerStats))] // Требуем наличие PlayerStats
+[RequireComponent(typeof(PlayerStats))]
 public class PlayerMovementFirstPerson : MonoBehaviour
 {
-    public float walkSpeed = 5f; // Скорость ходьбы
-    public float runSpeed = 10f; // Скорость бега
-    public float crouchSpeed = 2f; // Скорость при приседании
-    public float jumpHeight = -2f; // Высота прыжка
-    public float gravity = 9.81f; // Гравитация
-    public Transform cameraTransform; // Ссылка на камеру
-    public float mouseSensitivity = 100f; // Чувствительность мыши
+    public float walkSpeed = 5f;
+    public float runSpeed = 10f;
+    public float crouchSpeed = 2f;
+    public float jumpHeight = 2f;
+    public float gravity = -9.81f;
+    public float jumpForce = 5f;
+    public bool canDoubleJump = false;
+    public AudioClip jumpSound;
+    public Transform cameraTransform;
+    public float mouseSensitivity = 100f;
 
     private CharacterController _controller;
-    private PlayerStats playerStats; // Ссылка на скрипт PlayerStats
+    private PlayerStats playerStats;
     private Vector3 velocity;
     private bool isCrouching = false;
     private float originalHeight;
     private float _fallVelocity = 0;
-    public float crouchHeight = 1f; // Высота при приседании
-    private float verticalLookRotation = 0f; // Для вертикального вращения камеры
+    public float crouchHeight = 1f;
+    private float verticalLookRotation = 0f;
+    private bool isGrounded;
+    private bool hasDoubleJumped = false;
+    private AudioSource audioSource;
 
     private void Start()
     {
         _controller = GetComponent<CharacterController>();
-        playerStats = GetComponent<PlayerStats>(); // Получаем ссылку на PlayerStats
+        playerStats = GetComponent<PlayerStats>();
         originalHeight = _controller.height;
-        Cursor.lockState = CursorLockMode.Locked; // Блокируем курсор для управления мышью
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void Update()
@@ -37,11 +43,9 @@ public class PlayerMovementFirstPerson : MonoBehaviour
 
     private void MovePlayer()
     {
-        // Получаем ввод от клавиш WASD
         float horizontal = Input.GetAxis("Horizontal"); // A/D
         float vertical = Input.GetAxis("Vertical"); // W/S
 
-        // Определяем текущую скорость
         bool isRunning = Input.GetKey(KeyCode.LeftShift) && playerStats.currentStamina > 0;
         float speed = isRunning ? runSpeed : walkSpeed;
         if (isRunning)
@@ -49,29 +53,31 @@ public class PlayerMovementFirstPerson : MonoBehaviour
             playerStats.UseStamina(playerStats.staminaDrainRate * Time.deltaTime);
         }
 
-        if (isCrouching) speed = crouchSpeed; // Уменьшаем скорость при приседании
+        if (isCrouching) speed = crouchSpeed;
 
-        // Рассчитываем движение в пространстве игрока
         Vector3 move = transform.right * horizontal + transform.forward * vertical;
         _controller.Move(move * speed * Time.deltaTime);
 
-        // Прыжок
-        if (Input.GetKey(KeyCode.Space) && _controller.isGrounded)
-        {
-            _fallVelocity = -jumpHeight;
-        }
-
-        _fallVelocity += gravity * Time.fixedDeltaTime;
-        _controller.Move(Vector3.down * _fallVelocity * Time.fixedDeltaTime);
+        // РџСЂРѕРІРµСЂРєР° РЅР°С…РѕР¶РґРµРЅРёСЏ РЅР° Р·РµРјР»Рµ
+        isGrounded = _controller.isGrounded;
         
-        if (_controller.isGrounded)
+        if (isGrounded)
         {
-            _fallVelocity = 0;
+            velocity.y = -0.5f; // РќРµР±РѕР»СЊС€Р°СЏ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РґР»СЏ Р»СѓС‡С€РµРіРѕ РїСЂРёР»РёРїР°РЅРёСЏ Рє Р·РµРјР»Рµ
         }
-
+        
+        // РћР±СЂР°Р±РѕС‚РєР° РїСЂС‹Р¶РєР° РЅР° РїСЂРѕР±РµР»
+        if (Input.GetKey(KeyCode.Space) && isGrounded)
+        {
+            PerformJump();
+        }
+        
+        // РџСЂРёРјРµРЅРµРЅРёРµ РіСЂР°РІРёС‚Р°С†РёРё
+        velocity.y += gravity * Time.deltaTime;
+        
+        // РџРµСЂРµРјРµС‰РµРЅРёРµ
         _controller.Move(velocity * Time.deltaTime);
 
-        // Приседание
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             isCrouching = true;
@@ -86,16 +92,24 @@ public class PlayerMovementFirstPerson : MonoBehaviour
 
     private void RotateCamera()
     {
-        // Получаем входные данные от мыши
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        // Вращение игрока по горизонтали (лево/право)
         transform.Rotate(Vector3.up * mouseX);
 
-        // Вращение камеры по вертикали (вверх/вниз)
         verticalLookRotation -= mouseY;
-        verticalLookRotation = Mathf.Clamp(verticalLookRotation, -90f, 90f); // Ограничиваем угол обзора
+        verticalLookRotation = Mathf.Clamp(verticalLookRotation, -90f, 90f);
         cameraTransform.localRotation = Quaternion.Euler(verticalLookRotation, 0f, 0f);
+    }
+
+    private void PerformJump()
+    {
+        velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        
+        // Р’РѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёРµ Р·РІСѓРєР° РїСЂС‹Р¶РєР°
+        if (jumpSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(jumpSound);
+        }
     }
 }
