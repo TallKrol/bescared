@@ -20,11 +20,9 @@ public class PlayerMovementFirstPerson : MonoBehaviour
     private Vector3 velocity;
     private bool isCrouching = false;
     private float originalHeight;
-    private float _fallVelocity = 0;
     public float crouchHeight = 1f;
     private float verticalLookRotation = 0f;
     private bool isGrounded;
-    private bool hasDoubleJumped = false;
     private AudioSource audioSource;
 
     private void Start()

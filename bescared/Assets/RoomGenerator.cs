@@ -2,17 +2,24 @@ using UnityEngine;
 using System.Collections.Generic;
 using Unity.AI.Navigation;
 
+[System.Serializable]
+public class RoomData
+{
+    public GameObject prefab;
+    public float weight;
+    public float length;
+}
+
 public class RoomGenerator : MonoBehaviour
 {
     [Header("Standard Rooms")]
-    public GameObject firstRoomPrefab;
-    public GameObject[] roomPrefabs;
-    public float[] prefabWeights;
+    public RoomData firstRoomData;
+    public RoomData[] roomData;
 
     [Header("Special Rooms")]
-    public GameObject[] nightmareRoomPrefabs;
+    public RoomData[] nightmareRoomData;
     public float nightmareRoomWeight = 0.2f;
-    public GameObject[] peacefulRoomPrefabs;
+    public RoomData[] peacefulRoomData;
     public float peacefulRoomWeight = 0.8f;
 
     [Header("Monsters")]
@@ -25,44 +32,28 @@ public class RoomGenerator : MonoBehaviour
     public SanitySystem sanitySystem;
 
     [Header("Generation Settings")]
-    public float generationDistance = 20f;
-    public float deactivationDistance = 30f;
-    public int roomsAhead = 3; // Количество комнат впереди игрока
+    public float generationDistance = 40f; // Расстояние до конца последней комнаты, при котором нужно генерировать новую
+    public float deactivationDistance = 40f;
 
-    private Vector3 lastPlayerPosition;
     private Dictionary<float, GameObject> generatedRooms = new Dictionary<float, GameObject>();
     private float lastRoomEndPosition = 0f;
 
     private void Start()
     {
-        lastPlayerPosition = player.position;
+        if (player == null || sanitySystem == null) return;
         GenerateFirstRoom();
-        GenerateInitialRooms();
     }
 
     private void GenerateFirstRoom()
     {
-        if (firstRoomPrefab == null)
-        {
-            Debug.LogError("Префаб первой комнаты не назначен!");
-            return;
-        }
+        if (firstRoomData == null || firstRoomData.prefab == null) return;
 
         float firstRoomPosition = 0f;
-        GameObject firstRoom = InstantiateRoom(firstRoomPrefab, firstRoomPosition);
+        GameObject firstRoom = InstantiateRoom(firstRoomData.prefab, firstRoomPosition);
         if (firstRoom != null)
         {
             generatedRooms[firstRoomPosition] = firstRoom;
-            lastRoomEndPosition = GetRoomLength(firstRoom);
-        }
-    }
-
-    private void GenerateInitialRooms()
-    {
-        for (int i = 0; i < roomsAhead; i++)
-        {
-            float nextRoomPosition = lastRoomEndPosition;
-            GenerateRoom(nextRoomPosition);
+            lastRoomEndPosition = firstRoomPosition + firstRoomData.length;
         }
     }
 
@@ -73,22 +64,12 @@ public class RoomGenerator : MonoBehaviour
         return room;
     }
 
-    private float GetRoomLength(GameObject room)
-    {
-        Collider roomCollider = room.GetComponent<Collider>();
-        if (roomCollider != null)
-        {
-            return roomCollider.bounds.size.z;
-        }
-        return 0f;
-    }
-
     private void GenerateRoom(float position)
     {
         float playerSanity = sanitySystem.currentSanity;
         bool isNightmareRoom = false;
 
-        if (playerSanity <= 50f && nightmareRoomPrefabs.Length > 0)
+        if (playerSanity <= 50f && nightmareRoomData != null && nightmareRoomData.Length > 0)
         {
             float randomChance = Random.value;
             if (randomChance < nightmareRoomWeight)
@@ -97,17 +78,18 @@ public class RoomGenerator : MonoBehaviour
             }
         }
 
-        GameObject roomPrefab = isNightmareRoom ? 
-            GetRandomRoomPrefab(nightmareRoomPrefabs) : 
-            GetRandomRoomPrefab(roomPrefabs);
+        RoomData selectedRoomData = isNightmareRoom ? 
+            GetRandomRoomData(nightmareRoomData) : 
+            GetRandomRoomData(roomData);
 
-        if (roomPrefab != null)
+        if (selectedRoomData != null && selectedRoomData.prefab != null)
         {
-            GameObject room = InstantiateRoom(roomPrefab, position);
+            GameObject room = InstantiateRoom(selectedRoomData.prefab, position);
+            
             if (room != null)
             {
                 generatedRooms[position] = room;
-                lastRoomEndPosition = position + GetRoomLength(room);
+                lastRoomEndPosition = position + selectedRoomData.length;
                 
                 // Спавним монстров
                 MonsterSpawner spawner = room.GetComponent<MonsterSpawner>();
@@ -121,33 +103,53 @@ public class RoomGenerator : MonoBehaviour
         }
     }
 
-    private GameObject GetRandomRoomPrefab(GameObject[] prefabs)
+    private RoomData GetRandomRoomData(RoomData[] roomDataArray)
     {
-        if (prefabs == null || prefabs.Length == 0) return null;
-        return prefabs[Random.Range(0, prefabs.Length)];
+        if (roomDataArray == null || roomDataArray.Length == 0) return null;
+
+        float totalWeight = 0f;
+        foreach (var data in roomDataArray)
+        {
+            if (data != null)
+            {
+                totalWeight += data.weight;
+            }
+        }
+
+        if (totalWeight <= 0f) return roomDataArray[0];
+
+        float randomWeight = Random.Range(0f, totalWeight);
+        float accumulatedWeight = 0f;
+
+        foreach (var data in roomDataArray)
+        {
+            if (data != null)
+            {
+                accumulatedWeight += data.weight;
+                if (randomWeight <= accumulatedWeight)
+                {
+                    return data;
+                }
+            }
+        }
+
+        return roomDataArray[0];
     }
 
     private void Update()
     {
-        if (Vector3.Distance(player.position, lastPlayerPosition) > generationDistance)
+        if (player == null) return;
+
+        float playerZ = player.position.z;
+        float distanceToLastRoom = lastRoomEndPosition - playerZ;
+
+        if (distanceToLastRoom < generationDistance)
         {
-            lastPlayerPosition = player.position;
-            GenerateRoomsAroundPlayer();
+            float nextRoomPosition = lastRoomEndPosition;
+            GenerateRoom(nextRoomPosition);
         }
 
         DeactivateRoomsFarFromPlayer();
-    }
-
-    private void GenerateRoomsAroundPlayer()
-    {
-        float playerZ = player.position.z;
-        float lastRoomZ = lastRoomEndPosition;
-
-        if (playerZ > lastRoomZ - generationDistance)
-        {
-            float nextRoomPosition = lastRoomZ;
-            GenerateRoom(nextRoomPosition);
-        }
     }
 
     private void DeactivateRoomsFarFromPlayer()
@@ -155,14 +157,7 @@ public class RoomGenerator : MonoBehaviour
         foreach (var room in generatedRooms)
         {
             float distance = Mathf.Abs(player.position.z - room.Key);
-            if (distance > deactivationDistance)
-            {
-                room.Value.SetActive(false);
-            }
-            else
-            {
-                room.Value.SetActive(true);
-            }
+            room.Value.SetActive(distance <= deactivationDistance);
         }
     }
 
