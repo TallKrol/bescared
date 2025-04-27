@@ -3,43 +3,52 @@ using UnityEngine;
 public class Flashlight : MonoBehaviour
 {
     [Header("Flashlight Settings")]
-    public Light flashlight; // Сам источник света
-    public float damagePerSecond = 10f; // Урон от света для врагов
-    public float batteryLife = 100f; // Максимальный заряд батареи
-    public float batteryDrainRate = 5f; // Скорость разряда батареи
-    public float batteryRechargeRate = 2f; // Скорость зарядки батареи
-    public bool isRecharging = false; // Флаг для зарядки
-    public LayerMask enemyLayer; // Слой врагов, чтобы свет мог взаимодействовать с ними
+    public Light flashlight; // РЎРІРµС‚ С„РѕРЅР°СЂРёРєР°
+    public float damagePerSecond = 10f; // РЈСЂРѕРЅ РІ СЃРµРєСѓРЅРґСѓ РѕС‚ СЃРІРµС‚Р°
+    public float batteryLife = 100f; // РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°СЂСЏРґ Р±Р°С‚Р°СЂРµРё
+    public float batteryDrainRate = 5f; // РЎРєРѕСЂРѕСЃС‚СЊ СЂР°Р·СЂСЏРґР° Р±Р°С‚Р°СЂРµРё
+    public float batteryRechargeRate = 2f; // РЎРєРѕСЂРѕСЃС‚СЊ Р·Р°СЂСЏРґРєРё Р±Р°С‚Р°СЂРµРё
+    public bool isRecharging = false; // Р¤Р»Р°Рі Р·Р°СЂСЏРґРєРё
+    public LayerMask lightSensitiveMonstersLayer; // РЎР»РѕР№ РјРѕРЅСЃС‚СЂРѕРІ, С‡СѓРІСЃС‚РІРёС‚РµР»СЊРЅС‹С… Рє СЃРІРµС‚Сѓ
 
     [Header("Light Properties")]
-    public float defaultRange = 10f; // Дальность света
-    public float defaultIntensity = 1f; // Яркость света
-    public Color defaultColor = Color.white; // Цвет света
+    public float defaultRange = 10f; // РЎС‚Р°РЅРґР°СЂС‚РЅР°СЏ РґР°Р»СЊРЅРѕСЃС‚СЊ СЃРІРµС‚Р°
+    public float defaultIntensity = 1f; // РЎС‚Р°РЅРґР°СЂС‚РЅР°СЏ РёРЅС‚РµРЅСЃРёРІРЅРѕСЃС‚СЊ СЃРІРµС‚Р°
+    public Color defaultColor = Color.white; // РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ С†РІРµС‚ СЃРІРµС‚Р°
 
-    private bool isOn = false; // Включён ли фонарик
-    private Collider[] hitColliders; // Для нахождения врагов в зоне света
+    [Header("Flicker Settings")]
+    public float flickerThreshold = 20f; // РџРѕСЂРѕРі Р·Р°СЂСЏРґР°, РїСЂРё РєРѕС‚РѕСЂРѕРј РЅР°С‡РёРЅР°РµС‚ РјРµСЂС†Р°С‚СЊ
+    public float minFlickerIntensity = 0.2f; // РњРёРЅРёРјР°Р»СЊРЅР°СЏ РёРЅС‚РµРЅСЃРёРІРЅРѕСЃС‚СЊ РїСЂРё РјРµСЂС†Р°РЅРёРё
+    public float flickerSpeed = 5f; // РЎРєРѕСЂРѕСЃС‚СЊ РјРµСЂС†Р°РЅРёСЏ
+    public float flickerRandomness = 0.2f; // РЎР»СѓС‡Р°Р№РЅРѕСЃС‚СЊ РјРµСЂС†Р°РЅРёСЏ
+
+    private bool isOn = false; // РЎРѕСЃС‚РѕСЏРЅРёРµ С„РѕРЅР°СЂРёРєР°
+    private Collider[] hitColliders; // РњР°СЃСЃРёРІ РґР»СЏ С…СЂР°РЅРµРЅРёСЏ РєРѕР»Р»Р°Р№РґРµСЂРѕРІ РІ СЂР°РґРёСѓСЃРµ СЃРІРµС‚Р°
+    private float flickerTimer = 0f; // РўР°Р№РјРµСЂ РґР»СЏ РјРµСЂС†Р°РЅРёСЏ
 
     private void Start()
     {
-        // Настраиваем параметры света при старте
+        // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°СЃС‚СЂРѕРµРє СЃРІРµС‚Р° РґР»СЏ С„РѕРЅР°СЂРёРєР°
         flashlight.range = defaultRange;
         flashlight.intensity = defaultIntensity;
         flashlight.color = defaultColor;
+        flashlight.enabled = false; // Р“Р°СЂР°РЅС‚РёСЂСѓРµРј, С‡С‚Рѕ С„РѕРЅР°СЂРёРє РІС‹РєР»СЋС‡РµРЅ РїСЂРё СЃС‚Р°СЂС‚Рµ
     }
 
     private void Update()
     {
-        // Включение/выключение фонарика по нажатию F
+        // Р’РєР»СЋС‡РµРЅРёРµ/РІС‹РєР»СЋС‡РµРЅРёРµ С„РѕРЅР°СЂРёРєР° РїРѕ РєР»Р°РІРёС€Рµ F
         if (Input.GetKeyDown(KeyCode.F))
         {
             ToggleFlashlight();
         }
 
-        // Если фонарик включён, разряжаем батарею
+        // Р•СЃР»Рё С„РѕРЅР°СЂРёРє РІРєР»СЋС‡РµРЅ, СЂР°СЃС…РѕРґСѓРµРј Р·Р°СЂСЏРґ
         if (isOn)
         {
             DrainBattery();
             DamageEnemiesInLight();
+            UpdateFlicker();
         }
         else if (!isRecharging && batteryLife < 100f)
         {
@@ -49,11 +58,15 @@ public class Flashlight : MonoBehaviour
 
     private void ToggleFlashlight()
     {
-        if (batteryLife > 0)
+        if (batteryLife <= 0)
         {
-            isOn = !isOn;
-            flashlight.enabled = isOn; // Включаем/выключаем источник света
+            isOn = false;
+            flashlight.enabled = false;
+            return;
         }
+
+        isOn = !isOn;
+        flashlight.enabled = isOn;
     }
 
     private void DrainBattery()
@@ -64,8 +77,14 @@ public class Flashlight : MonoBehaviour
             if (batteryLife <= 0)
             {
                 batteryLife = 0;
-                ToggleFlashlight(); // Выключаем фонарик, если батарея разряжена
+                isOn = false;
+                flashlight.enabled = false;
             }
+        }
+        else
+        {
+            isOn = false;
+            flashlight.enabled = false;
         }
     }
 
@@ -80,8 +99,8 @@ public class Flashlight : MonoBehaviour
 
     private void DamageEnemiesInLight()
     {
-        // Проверяем врагов в зоне света
-        hitColliders = Physics.OverlapSphere(flashlight.transform.position, flashlight.range, enemyLayer);
+        // РќР°С…РѕРґРёРј РјРѕРЅСЃС‚СЂРѕРІ РІ СЂР°РґРёСѓСЃРµ СЃРІРµС‚Р°
+        hitColliders = Physics.OverlapSphere(flashlight.transform.position, flashlight.range, lightSensitiveMonstersLayer);
         foreach (var hitCollider in hitColliders)
         {
             TargetWithLight target = hitCollider.GetComponent<TargetWithLight>();
@@ -92,7 +111,29 @@ public class Flashlight : MonoBehaviour
         }
     }
 
-    // Методы для изменения параметров света
+    private void UpdateFlicker()
+    {
+        if (batteryLife <= flickerThreshold)
+        {
+            // РћР±РЅРѕРІР»СЏРµРј С‚Р°Р№РјРµСЂ РјРµСЂС†Р°РЅРёСЏ
+            flickerTimer += Time.deltaTime * flickerSpeed;
+            
+            // Р”РѕР±Р°РІР»СЏРµРј СЃР»СѓС‡Р°Р№РЅРѕСЃС‚СЊ Рє РјРµСЂС†Р°РЅРёСЋ
+            float randomOffset = Random.Range(-flickerRandomness, flickerRandomness);
+            float flickerValue = Mathf.PingPong(flickerTimer + randomOffset, 1f);
+            
+            // РРЅС‚РµСЂРїРѕР»РёСЂСѓРµРј РёРЅС‚РµРЅСЃРёРІРЅРѕСЃС‚СЊ РјРµР¶РґСѓ РјРёРЅРёРјР°Р»СЊРЅРѕР№ Рё СЃС‚Р°РЅРґР°СЂС‚РЅРѕР№
+            float currentIntensity = Mathf.Lerp(minFlickerIntensity, defaultIntensity, flickerValue);
+            flashlight.intensity = currentIntensity;
+        }
+        else
+        {
+            // Р•СЃР»Рё Р·Р°СЂСЏРґ РІС‹С€Рµ РїРѕСЂРѕРіР°, РІРѕР·РІСЂР°С‰Р°РµРј СЃС‚Р°РЅРґР°СЂС‚РЅСѓСЋ РёРЅС‚РµРЅСЃРёРІРЅРѕСЃС‚СЊ
+            flashlight.intensity = defaultIntensity;
+        }
+    }
+
+    // РњРµС‚РѕРґС‹ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє СЃРІРµС‚Р°
     public void SetLightRange(float range)
     {
         flashlight.range = range;

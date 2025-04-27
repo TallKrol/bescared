@@ -33,7 +33,7 @@ public class RoomGenerator : MonoBehaviour
 
     [Header("Generation Settings")]
     public float generationDistance = 40f; // Расстояние до конца последней комнаты, при котором нужно генерировать новую
-    public float deactivationDistance = 40f;
+    public float deactivationDistance = 60f;
 
     private Dictionary<float, GameObject> generatedRooms = new Dictionary<float, GameObject>();
     private float lastRoomEndPosition = 0f;
