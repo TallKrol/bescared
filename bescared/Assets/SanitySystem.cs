@@ -2,22 +2,22 @@ using UnityEngine;
 
 public class SanitySystem : MonoBehaviour
 {
-    [Header("Sanity Settings")]
-    public float maxSanity = 100f; // Максимальный уровень рассудка
-    public float minSanity = -25f; // Минимальный уровень рассудка
-    public float currentSanity; // Текущий уровень рассудка
-    public float sanityDrainRate = 5f; // Скорость уменьшения рассудка (например, в темноте)
-    public float sanityRecoveryRate = 3f; // Скорость восстановления рассудка (например, на свету)
+    [Header("РќР°СЃС‚СЂРѕР№РєРё СЂР°СЃСЃСѓРґРєР°")]
+    public float maxSanity = 100f; // РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ СЂР°СЃСЃСѓРґРєР°
+    public float minSanity = -25f; // РњРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ СЂР°СЃСЃСѓРґРєР°
+    public float currentSanity; // РўРµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ СЂР°СЃСЃСѓРґРєР°
+    public float sanityDrainRate = 5f; // РЎРєРѕСЂРѕСЃС‚СЊ РїРѕС‚РµСЂРё СЂР°СЃСЃСѓРґРєР° (РІ С‚РµРјРЅРѕС‚Рµ, РІ СЃРµРєСѓРЅРґСѓ)
+    public float sanityRecoveryRate = 3f; // РЎРєРѕСЂРѕСЃС‚СЊ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ СЂР°СЃСЃСѓРґРєР° (РЅР° СЃРІРµС‚Сѓ, РІ СЃРµРєСѓРЅРґСѓ)
 
-    [Header("Light Check")]
-    public LayerMask lightLayer; // Слой света для проверки
-    public float lightCheckRadius = 5f; // Радиус проверки света вокруг игрока
+    [Header("РџСЂРѕРІРµСЂРєР° СЃРІРµС‚Р°")]
+    public LayerMask lightLayer; // РЎР»РѕР№ СЃРІРµС‚Р° РґР»СЏ РїСЂРѕРІРµСЂРєРё
+    public float lightCheckRadius = 5f; // Р Р°РґРёСѓСЃ РїСЂРѕРІРµСЂРєРё РЅР°Р»РёС‡РёСЏ СЃРІРµС‚Р° РІРѕРєСЂСѓРі РёРіСЂРѕРєР°
 
-    private bool isInLight = false; // Находится ли игрок в зоне света
+    private bool isInLight = false; // РќР°С…РѕРґРёС‚СЃСЏ Р»Рё РёРіСЂРѕРє РІ Р·РѕРЅРµ СЃРІРµС‚Р°
 
     private void Start()
     {
-        // Устанавливаем начальное значение рассудка
+        // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°С‡Р°Р»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ СЂР°СЃСЃСѓРґРєР°
         currentSanity = maxSanity;
     }
 
@@ -34,38 +34,35 @@ public class SanitySystem : MonoBehaviour
             DrainSanity();
         }
 
-        // Ограничиваем значение рассудка в пределах от -25 до 100
+        // РћРіСЂР°РЅРёС‡РµРЅРёРµ Р·РЅР°С‡РµРЅРёСЏ СЂР°СЃСЃСѓРґРєР° РѕС‚ -25 РґРѕ 100
         currentSanity = Mathf.Clamp(currentSanity, minSanity, maxSanity);
     }
 
     private void CheckLight()
     {
-        // Проверка, находится ли игрок в зоне света
+        // РџСЂРѕРІРµСЂСЏРµРј, РЅР°С…РѕРґРёС‚СЃСЏ Р»Рё РёРіСЂРѕРє РІ Р·РѕРЅРµ СЃРІРµС‚Р°
         Collider[] lightSources = Physics.OverlapSphere(transform.position, lightCheckRadius, lightLayer);
         isInLight = lightSources.Length > 0;
     }
 
     private void DrainSanity()
     {
-        // Уменьшение рассудка
+        // РџРѕС‚РµСЂСЏ СЂР°СЃСЃСѓРґРєР°
         currentSanity -= sanityDrainRate * Time.deltaTime;
     }
 
     private void RecoverSanity()
     {
-        // Восстановление рассудка
+        // Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ СЂР°СЃСЃСѓРґРєР°
         currentSanity += sanityRecoveryRate * Time.deltaTime;
     }
 
-    public void TakeSanityDamage(float amount)
+    /// <summary>
+    /// РР·РјРµРЅСЏРµС‚ Р·РЅР°С‡РµРЅРёРµ СЂР°СЃСЃСѓРґРєР° РЅР° СѓРєР°Р·Р°РЅРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ
+    /// </summary>
+    /// <param name="amount">РљРѕР»РёС‡РµСЃС‚РІРѕ РёР·РјРµРЅРµРЅРёСЏ СЂР°СЃСЃСѓРґРєР° (РїРѕР»РѕР¶РёС‚РµР»СЊРЅРѕРµ - РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ, РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРµ - РїРѕС‚РµСЂСЏ)</param>
+    public void ModifySanity(float amount)
     {
-        // Уменьшение рассудка от внешних факторов
-        currentSanity -= amount;
-    }
-
-    public void RestoreSanity(float amount)
-    {
-        // Восстановление рассудка от внешних факторов
         currentSanity += amount;
     }
 }

@@ -1,30 +1,38 @@
 using UnityEngine;
 
-[System.Serializable]
-public class RoomZoneData
+[CreateAssetMenu(fileName = "NewZone", menuName = "Room Zone Data")]
+public class RoomZoneData : ScriptableObject
 {
-    [Header("Zone Settings")]
-    public string zoneName; // Название зоны
-    public float fogDensity; // Плотность тумана (0 - нет тумана)
-    public float sanityDrainRate; // Скорость потери рассудка в зоне
-    public Color fogColor; // Цвет тумана
-    public float fogDistance; // Дальность тумана
-    public ParticleSystem zoneParticles; // Партиклы зоны (опционально)
+    [Header("Основные настройки")]
+    [Tooltip("Название зоны")]
+    public string zoneName = "Новая зона";
 
-    [Header("Player Effects")]
-    public float staminaDrainRate; // Скорость потери стамины в зоне
-    public float gravityMultiplier = 1f; // Множитель гравитации (1 - нормальная гравитация)
+    [Header("Эффекты рассудка")]
+    [Tooltip("Скорость потери рассудка в зоне")]
+    public float sanityDrainRate = 5f;
 
-    public RoomZoneData(string name, float density, float sanityDrain, Color color, float distance, 
-        float staminaDrain = 0f, float gravityMult = 1f, ParticleSystem particles = null)
-    {
-        zoneName = name;
-        fogDensity = Mathf.Clamp01(density);
-        sanityDrainRate = sanityDrain;
-        fogColor = color;
-        fogDistance = Mathf.Max(0f, distance);
-        staminaDrainRate = staminaDrain;
-        gravityMultiplier = Mathf.Max(0f, gravityMult);
-        zoneParticles = particles;
-    }
+    [Header("Эффекты выносливости")]
+    [Tooltip("Скорость потери выносливости в зоне")]
+    public float staminaDrainRate = 3f;
+
+    [Header("Настройки тумана")]
+    [Tooltip("Плотность тумана (0 - нет тумана)")]
+    [Range(0f, 1f)]
+    public float fogDensity = 0.1f;
+
+    [Tooltip("Цвет тумана")]
+    public Color fogColor = Color.black;
+
+    [Tooltip("Дальность тумана")]
+    [Min(0f)]
+    public float fogDistance = 20f;
+
+    [Header("Физика")]
+    [Tooltip("Множитель гравитации (1 - нормальная гравитация)")]
+    [Min(0f)]
+    public float gravityMultiplier = 1f;
+
+    [Header("Визуальные эффекты")]
+    [Tooltip("Партиклы зоны (опционально)")]
+    public ParticleSystem zoneParticles;
 } 

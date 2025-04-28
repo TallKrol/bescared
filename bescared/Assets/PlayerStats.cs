@@ -3,28 +3,28 @@ using UnityEngine;
 public class PlayerStats : MonoBehaviour
 {
     [Header("Health Settings")]
-    public float maxHealth = 100f; // Максимальное здоровье
-    public float currentHealth; // Текущее здоровье
+    public float maxHealth = 100f; // РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РґРѕСЂРѕРІСЊРµ
+    public float currentHealth; // РўРµРєСѓС‰РµРµ Р·РґРѕСЂРѕРІСЊРµ
 
     [Header("Stamina Settings")]
-    public float maxStamina = 50f; // Максимальная стамина
-    public float currentStamina; // Текущая стамина
-    public float staminaDrainRate = 5f; // Скорость уменьшения стамины при беге
-    public float staminaRecoveryRate = 3f; // Скорость восстановления стамины
-    public float staminaRecoveryDelay = 2f; // Задержка перед восстановлением после использования
+    public float maxStamina = 50f; // РњР°РєСЃРёРјР°Р»СЊРЅР°СЏ РІС‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ
+    public float currentStamina; // РўРµРєСѓС‰Р°СЏ РІС‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ
+    public float staminaDrainRate = 5f; // РЎРєРѕСЂРѕСЃС‚СЊ РїРѕС‚РµСЂРё РІС‹РЅРѕСЃР»РёРІРѕСЃС‚Рё РїСЂРё Р±РµРіРµ
+    public float staminaRecoveryRate = 3f; // РЎРєРѕСЂРѕСЃС‚СЊ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ РІС‹РЅРѕСЃР»РёРІРѕСЃС‚Рё
+    public float staminaRecoveryDelay = 2f; // Р—Р°РґРµСЂР¶РєР° РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ РїРѕСЃР»Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
 
     private bool isRecoveringStamina = false;
 
     private void Start()
     {
-        // Устанавливаем стартовые значения
+        // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°С‡Р°Р»СЊРЅС‹С… Р·РЅР°С‡РµРЅРёР№
         currentHealth = maxHealth;
         currentStamina = maxStamina;
     }
 
     private void Update()
     {
-        RecoverStamina(); // Восстанавливаем стамину, если это возможно
+        RecoverStamina(); // Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РІС‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ, РµСЃР»Рё СЌС‚Рѕ РІРѕР·РјРѕР¶РЅРѕ
     }
 
     public void TakeDamage(float amount)
@@ -33,7 +33,7 @@ public class PlayerStats : MonoBehaviour
         if (currentHealth <= 0)
         {
             currentHealth = 0;
-            Die(); // Вызываем метод смерти игрока
+            Die(); // Р’С‹Р·С‹РІР°РµРј СЃРјРµСЂС‚СЊ РїСЂРё РЅСѓР»РµРІРѕРј Р·РґРѕСЂРѕРІСЊРµ
         }
     }
 
@@ -56,7 +56,22 @@ public class PlayerStats : MonoBehaviour
                 currentStamina = 0;
             }
 
-            // Если стамина используется, сбрасываем восстановление
+            // Р•СЃР»Рё РІС‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ РёР·СЂР°СЃС…РѕРґРѕРІР°РЅР°, РѕС‚РєР»Р°РґС‹РІР°РµРј РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ
+            isRecoveringStamina = false;
+            CancelInvoke(nameof(StartStaminaRecovery));
+            Invoke(nameof(StartStaminaRecovery), staminaRecoveryDelay);
+        }
+    }
+    
+    // РљРѕР»РёС‡РµСЃС‚РІРѕ РёР·РјРµРЅРµРЅРёСЏ РІС‹РЅРѕСЃР»РёРІРѕСЃС‚Рё (РїРѕР»РѕР¶РёС‚РµР»СЊРЅРѕРµ - РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ, РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРµ - РїРѕС‚РµСЂСЏ)>
+    public void ModifyStamina(float amount)
+    {
+        currentStamina += amount;
+        currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
+
+        // Р•СЃР»Рё РІС‹РЅРѕСЃР»РёРІРѕСЃС‚СЊ РёР·СЂР°СЃС…РѕРґРѕРІР°РЅР°, РѕС‚РєР»Р°РґС‹РІР°РµРј РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ
+        if (amount < 0)
+        {
             isRecoveringStamina = false;
             CancelInvoke(nameof(StartStaminaRecovery));
             Invoke(nameof(StartStaminaRecovery), staminaRecoveryDelay);
@@ -83,6 +98,6 @@ public class PlayerStats : MonoBehaviour
     private void Die()
     {
         Debug.Log("Player has died!");
-        // Здесь можно добавить логику для смерти, например, перезапуск уровня
+        // Р—РґРµСЃСЊ РјРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ Р»РѕРіРёРєСѓ СЃРјРµСЂС‚Рё, РЅР°РїСЂРёРјРµСЂ, РїРµСЂРµР·Р°РіСЂСѓР·РєСѓ СѓСЂРѕРІРЅСЏ
     }
 }
