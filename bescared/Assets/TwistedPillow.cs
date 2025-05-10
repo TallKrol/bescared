@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Unity.AI.Navigation;
 
-public class TwistedPillow : MonoBehaviour
+public class TwistedPillow : MonoBehaviour, IDamageable
 {
     [Header("Pillow Settings")]
     public int health = 10; // Количество здоровья подушки

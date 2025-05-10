@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerStats : MonoBehaviour
+public class PlayerStats : MonoBehaviour, IDamageable
 {
     [Header("Health Settings")]
     public float maxHealth = 100f; // Максимальное здоровье
@@ -27,7 +27,7 @@ public class PlayerStats : MonoBehaviour
         RecoverStamina(); // Восстанавливаем выносливость, если это возможно
     }
 
-    public void TakeDamage(float amount)
+    public void TakeDamage(int amount)
     {
         currentHealth -= amount;
         if (currentHealth <= 0)

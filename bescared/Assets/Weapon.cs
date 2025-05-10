@@ -24,6 +24,8 @@ public class Weapon : MonoBehaviour
     public AnimationCurve bulletDropCurve; // Кривая падения пули (настраивается в инспекторе)
     public float bulletSpeed = 100f; // Скорость пули в юнитах в секунду
     public float maxBulletDrop = 5f; // Максимальное падение пули в юнитах
+    public GameObject bulletPrefab; // Префаб пули
+    public Transform bulletSpawnPoint; // Точка спавна пули
 
     [Header("References")]
     public Camera fpsCamera; // Камера от первого лица
@@ -41,10 +43,6 @@ public class Weapon : MonoBehaviour
     private Vector3 targetPosition; // Целевая позиция оружия
     private Quaternion targetRotation; // Целевой поворот оружия
 
-    // Пул объектов для оптимизации
-    private Queue<GameObject> bulletPool = new Queue<GameObject>();
-    private int poolSize = 20; // Размер пула пуль
-
     void Start()
     {
         // Инициализация начальных значений
@@ -52,9 +50,6 @@ public class Weapon : MonoBehaviour
         currentFOV = normalFOV;
         targetPosition = hipPosition;
         targetRotation = Quaternion.identity;
-
-        // Создание пула пуль
-        InitializeBulletPool();
     }
 
     void Update()
@@ -90,6 +85,8 @@ public class Weapon : MonoBehaviour
         {
             isAiming = true;
             targetPosition = aimPosition;
+            // Устанавливаем поворот при прицеливании
+            targetRotation = Quaternion.Euler(-5f, 0f, 0f); // Небольшой наклон вниз
             // Плавное изменение FOV
             currentFOV = Mathf.Lerp(currentFOV, aimFOV, Time.deltaTime * aimSpeed);
         }
@@ -97,6 +94,8 @@ public class Weapon : MonoBehaviour
         {
             isAiming = false;
             targetPosition = hipPosition;
+            // Возвращаем обычный поворот
+            targetRotation = Quaternion.identity;
             // Возврат к обычному FOV
             currentFOV = Mathf.Lerp(currentFOV, normalFOV, Time.deltaTime * aimSpeed);
         }
@@ -113,36 +112,68 @@ public class Weapon : MonoBehaviour
             targetPosition,
             Time.deltaTime * aimSpeed
         );
+        
+        // Плавный поворот оружия
+        weaponTransform.localRotation = Quaternion.Lerp(
+            weaponTransform.localRotation,
+            targetRotation,
+            Time.deltaTime * aimSpeed
+        );
     }
 
     // Процесс выстрела
-    private void Shoot()
+    public void Shoot()
     {
-        // Уменьшаем патроны
+        if (isReloading || Time.time < nextTimeToFire || currentAmmo <= 0)
+            return;
+
+        if (bulletPrefab == null)
+        {
+            Debug.LogError("Bullet prefab is not assigned!");
+            return;
+        }
+
+        if (bulletSpawnPoint == null)
+        {
+            Debug.LogError("Bullet spawn point is not assigned!");
+            return;
+        }
+
+        // Получаем направление стрельбы
+        Vector3 direction = bulletSpawnPoint.forward;
+        
+        // Отладочная визуализация
+        Debug.DrawRay(bulletSpawnPoint.position, direction * 10f, Color.red, 1f);
+        Debug.Log($"Shooting from {bulletSpawnPoint.position} in direction {direction}");
+
+        // Создаем пулю
+        GameObject bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, Quaternion.LookRotation(direction));
+        Bullet bulletComponent = bullet.GetComponent<Bullet>();
+        
+        if (bulletComponent != null)
+        {
+            bulletComponent.Initialize(bulletSpawnPoint.position, direction, range);
+        }
+        else
+        {
+            Debug.LogError("Bullet component not found on bullet prefab!");
+            Destroy(bullet);
+            return;
+        }
+
+        // Эффекты стрельбы
+        if (muzzleFlash != null)
+            {
+            muzzleFlash.Play();
+        }
+
+        if (fireSound != null)
+        {
+            fireSound.Play();
+        }
+
         currentAmmo--;
-
-        // Визуальные эффекты
-        if (muzzleFlash != null) muzzleFlash.Play();
-        if (smokeEffect != null) smokeEffect.Play();
-        if (fireSound != null) fireSound.Play();
-
-        // Создаём визуальную пулю из пула
-        GameObject bullet = GetBulletFromPool();
-        if (bullet != null)
-        {
-            bullet.transform.position = fpsCamera.transform.position;
-            bullet.transform.rotation = fpsCamera.transform.rotation;
-            bullet.SetActive(true);
-            StartCoroutine(MoveBullet(bullet));
-        }
-
-        // Проверка попадания
-        RaycastHit hit;
-        Vector3 direction = CalculateBulletDirection();
-        if (Physics.Raycast(fpsCamera.transform.position, direction, out hit, range))
-        {
-            HandleHit(hit);
-        }
+        nextTimeToFire = Time.time + 1f / fireRate;
     }
 
     // Расчёт траектории пули с учётом падения
@@ -155,72 +186,6 @@ public class Weapon : MonoBehaviour
         float drop = bulletDropCurve.Evaluate(distance / range) * maxBulletDrop;
         direction.y -= drop;
         return direction;
-    }
-
-    // Обработка попадания
-    private void HandleHit(RaycastHit hit)
-    {
-        // Проверка на углового монстра
-        CornerMonster cornerMonster = hit.transform.GetComponent<CornerMonster>();
-        if (cornerMonster != null)
-        {
-            cornerMonster.OnHit();
-            return;
-        }
-
-        // Проверка на обычную цель
-        Target target = hit.transform.GetComponent<Target>();
-        if (target != null)
-        {
-            target.TakeDamage(damage);
-        }
-    }
-
-    // Анимация полёта пули
-    private System.Collections.IEnumerator MoveBullet(GameObject bullet)
-    {
-        float distance = 0f;
-        Vector3 startPosition = bullet.transform.position;
-        Vector3 direction = CalculateBulletDirection();
-
-        // Движение пули до достижения максимальной дальности
-        while (distance < range)
-        {
-            distance += bulletSpeed * Time.deltaTime;
-            bullet.transform.position = startPosition + direction * distance;
-            yield return null;
-        }
-
-        // Возврат пули в пул
-        ReturnBulletToPool(bullet);
-    }
-
-    // Инициализация пула пуль
-    private void InitializeBulletPool()
-    {
-        for (int i = 0; i < poolSize; i++)
-        {
-            GameObject bullet = new GameObject("Bullet");
-            bullet.SetActive(false);
-            bulletPool.Enqueue(bullet);
-        }
-    }
-
-    // Получение пули из пула
-    private GameObject GetBulletFromPool()
-    {
-        if (bulletPool.Count > 0)
-        {
-            return bulletPool.Dequeue();
-        }
-        return null;
-    }
-
-    // Возврат пули в пул
-    private void ReturnBulletToPool(GameObject bullet)
-    {
-        bullet.SetActive(false);
-        bulletPool.Enqueue(bullet);
     }
 
     // Процесс перезарядки

@@ -1,8 +1,8 @@
 using UnityEngine;
 
-public class Target : MonoBehaviour
+public class Target : MonoBehaviour, IDamageable
 {
-    public int health = 50; // Здоровье объекта
+    public int health = 50; // Р—РґРѕСЂРѕРІСЊРµ РјРёС€РµРЅРё
 
     public void TakeDamage(int amount)
     {
@@ -16,6 +16,6 @@ public class Target : MonoBehaviour
     private void Die()
     {
         Debug.Log(gameObject.name + " was destroyed!");
-        Destroy(gameObject); // Удаляем объект
+        Destroy(gameObject); // РЈРЅРёС‡С‚РѕР¶Р°РµРј РјРёС€РµРЅСЊ
     }
 }

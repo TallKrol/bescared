@@ -1,8 +1,17 @@
 using UnityEngine;
 
-public class TargetWithLight : MonoBehaviour
+public class TargetWithLight : MonoBehaviour, IDamageable
 {
-    public int health = 50; // Здоровье объекта
+    public int health = 50; // Р—РґРѕСЂРѕРІСЊРµ РјРёС€РµРЅРё
+
+    public void TakeDamage(int amount)
+    {
+        health -= amount;
+        if (health <= 0)
+        {
+            Die();
+        }
+    }
 
     public void TakeLightDamage(float amount)
     {
@@ -15,7 +24,7 @@ public class TargetWithLight : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log(gameObject.name + " was destroyed by light!");
-        Destroy(gameObject); // Удаляем объект
+        Debug.Log(gameObject.name + " was destroyed!");
+        Destroy(gameObject); // РЈРЅРёС‡С‚РѕР¶Р°РµРј РјРёС€РµРЅСЊ
     }
 }
