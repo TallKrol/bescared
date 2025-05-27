@@ -1,0 +1,41 @@
+{
+    "languageCode": "ru",
+    "entries": [
+        {
+            "key": "book.page",
+            "value": "Страница {0} из {1}"
+        },
+        {
+            "key": "book.deaths",
+            "value": "Смертей: {0}"
+        },
+        {
+            "key": "book.unknown",
+            "value": "???"
+        },
+        {
+            "key": "merchant.aggressive",
+            "value": "Торговец становится агрессивным!"
+        },
+        {
+            "key": "merchant.trade",
+            "value": "Торговля успешна!"
+        },
+        {
+            "key": "merchant.no_items",
+            "value": "Нет доступных предметов!"
+        },
+        {
+            "key": "merchant.no_spawn_points",
+            "value": "Не назначены точки появления!"
+        },
+        {
+            "key": "merchant.player_not_found",
+            "value": "Игрок не найден! Торговец не будет работать корректно."
+        },
+        {
+            "key": "merchant.component_missing",
+            "value": "{0} не назначен торговцу!"
+        }
+    ]
+} 

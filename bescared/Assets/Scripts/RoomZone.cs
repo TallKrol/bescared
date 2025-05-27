@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class RoomZone : MonoBehaviour
 {
@@ -6,12 +7,25 @@ public class RoomZone : MonoBehaviour
     public RoomZoneData zoneData; // Данные зоны
     public bool isActive = true; // Активна ли зона
 
+    [Header("Настройки шейдера")]
+    [Tooltip("Шейдер, который будет применяться при входе в зону")]
+    public Shader zoneShader;
+    [Tooltip("Материал с шейдером для плавного перехода")]
+    public Material zoneMaterial;
+    [Tooltip("Время перехода шейдера (в секундах)")]
+    public float shaderTransitionTime = 1f;
+    [Tooltip("Максимальная интенсивность эффекта шейдера")]
+    public float maxShaderIntensity = 1f;
+
     private Collider zoneCollider; // Коллайдер зоны
     private ParticleSystem particles; // Ссылка на партиклы
     private SanitySystem playerSanity; // Ссылка на систему рассудка игрока
     private PlayerStats playerStats; // Ссылка на статистику игрока
     private CharacterController playerController; // Ссылка на контроллер игрока
     private float defaultGravity; // Стандартная гравитация
+    private bool isPlayerInZone = false;
+    private Coroutine shaderTransitionCoroutine;
+    private static readonly string SHADER_INTENSITY_PROPERTY = "_EffectIntensity";
 
     private void Start()
     {
@@ -52,6 +66,14 @@ public class RoomZone : MonoBehaviour
         {
             // Сохраняем стандартную гравитацию
             defaultGravity = Physics.gravity.y;
+        }
+
+        if (zoneMaterial != null && zoneShader != null)
+        {
+            // Инициализируем материал с шейдером
+            zoneMaterial = new Material(zoneShader);
+            // Устанавливаем начальную интенсивность в 0
+            zoneMaterial.SetFloat(SHADER_INTENSITY_PROPERTY, 0f);
         }
     }
 
@@ -132,13 +154,96 @@ public class RoomZone : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!isActive) return;
+
+        if (other.CompareTag("Player"))
+    {
+            isPlayerInZone = true;
+            OnPlayerEnter();
+            
+            // Запускаем плавное включение шейдера
+            if (zoneMaterial != null)
+            {
+                if (shaderTransitionCoroutine != null)
+        {
+                    StopCoroutine(shaderTransitionCoroutine);
+                }
+                shaderTransitionCoroutine = StartCoroutine(TransitionShaderIntensity(0f, maxShaderIntensity));
+            }
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!isActive) return;
+
+        if (other.CompareTag("Player"))
+        {
+            isPlayerInZone = false;
+            OnPlayerExit();
+            
+            // Запускаем плавное выключение шейдера
+            if (zoneMaterial != null)
+            {
+                if (shaderTransitionCoroutine != null)
+                {
+                    StopCoroutine(shaderTransitionCoroutine);
+                }
+                shaderTransitionCoroutine = StartCoroutine(TransitionShaderIntensity(maxShaderIntensity, 0f));
+            }
+        }
+    }
+
+    private IEnumerator TransitionShaderIntensity(float startValue, float endValue)
+    {
+        float elapsedTime = 0f;
+        
+        while (elapsedTime < shaderTransitionTime)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / shaderTransitionTime;
+            
+            // Используем плавную интерполяцию
+            float currentIntensity = Mathf.Lerp(startValue, endValue, t);
+            zoneMaterial.SetFloat(SHADER_INTENSITY_PROPERTY, currentIntensity);
+            
+            yield return null;
+        }
+        
+        // Устанавливаем финальное значение
+        zoneMaterial.SetFloat(SHADER_INTENSITY_PROPERTY, endValue);
+    }
+
+    protected virtual void OnPlayerEnter()
+    {
+        // Базовый метод для переопределения в наследниках
+        Debug.Log($"Игрок вошел в зону: {zoneData.roomId}");
+    }
+
+    protected virtual void OnPlayerExit()
+    {
+        // Базовый метод для переопределения в наследниках
+        Debug.Log($"Игрок вышел из зоны: {zoneData.roomId}");
+    }
+
+    private void OnDestroy()
+    {
+        // Очищаем материал при уничтожении объекта
+        if (zoneMaterial != null)
+        {
+            Destroy(zoneMaterial);
+        }
+    }
+
+    // Визуализация зоны в редакторе
     private void OnDrawGizmos()
     {
-        // Визуализация зоны в редакторе
-        if (zoneCollider != null)
-        {
-            Gizmos.color = new Color(zoneData.fogColor.r, zoneData.fogColor.g, zoneData.fogColor.b, 0.3f);
-            Gizmos.DrawCube(zoneCollider.bounds.center, zoneCollider.bounds.size);
-        }
+        if (!isActive) return;
+
+        Gizmos.color = isPlayerInZone ? Color.red : Color.yellow;
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
     }
 } 

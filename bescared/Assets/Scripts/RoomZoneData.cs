@@ -35,4 +35,7 @@ public class RoomZoneData : ScriptableObject
     [Header("Визуальные эффекты")]
     [Tooltip("Партиклы зоны (опционально)")]
     public ParticleSystem zoneParticles;
+
+    [Header("ID зоны/комнаты")]
+    public string roomId;
 } 

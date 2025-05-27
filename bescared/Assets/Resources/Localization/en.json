@@ -1,0 +1,41 @@
+{
+    "languageCode": "en",
+    "entries": [
+        {
+            "key": "book.page",
+            "value": "Page {0} of {1}"
+        },
+        {
+            "key": "book.deaths",
+            "value": "Deaths: {0}"
+        },
+        {
+            "key": "book.unknown",
+            "value": "???"
+        },
+        {
+            "key": "merchant.aggressive",
+            "value": "The merchant becomes aggressive!"
+        },
+        {
+            "key": "merchant.trade",
+            "value": "Trade successful!"
+        },
+        {
+            "key": "merchant.no_items",
+            "value": "No items available!"
+        },
+        {
+            "key": "merchant.no_spawn_points",
+            "value": "No spawn points assigned!"
+        },
+        {
+            "key": "merchant.player_not_found",
+            "value": "Player not found! Merchant will not function properly."
+        },
+        {
+            "key": "merchant.component_missing",
+            "value": "{0} not assigned to Merchant!"
+        }
+    ]
+} 
